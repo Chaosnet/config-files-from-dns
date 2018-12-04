@@ -171,10 +171,16 @@ def h3textnet(net,name):
 # print a HOST entry in h3text format
 def h3texthost(hname,haliases,addrs,hinfo):
     global aosnet_its_pruning
-    print "HOST",":",", ".join(map(lambda (s): "CHAOS {:o}".format(s),addrs)),\
-          ":",dns.name.from_text(hname).to_text(omit_final_dot=True)+(len(haliases) > 0 and ", " or "")+\
-          ", ".join(map(lambda (x):maybe_prune_domain_parent(x,hinfo), haliases)),\
-          ":",hinfo['CPU'],":",hinfo['OS'],": :"
+    try:
+        print "HOST",":",", ".join(map(lambda (s): "CHAOS {:o}".format(s),addrs)),\
+              ":",maybe_prune_domain_parent(dns.name.from_text(hname).to_text(omit_final_dot=True),hinfo)+\
+              (len(haliases) > 0 and ", " or "")+\
+              ", ".join(map(lambda (x):maybe_prune_domain_parent(x,hinfo), haliases)),\
+              ":",hinfo['CPU'],":",hinfo['OS'],": :"
+    except KeyError:
+        print >> sys.stderr,"## Host info error for",hname,"HINFO",hinfo
+        ## terminate line started within try
+        print
 
 # Print a lispm format NET entry
 def lispmnet(net,name):
@@ -184,12 +190,17 @@ def lispmnet(net,name):
 def lispmhost(hname,haliases,addrs,hinfo):
     global aosnet_its_pruning
     ## USER vs SERVER vs TIP vs UNKNOWN - does anybody care? I don't.
-    print "HOST",dns.name.from_text(hname).to_text(omit_final_dot=True)+",",\
+    try:
+        print "HOST",maybe_prune_domain_parent(dns.name.from_text(hname).to_text(omit_final_dot=True),hinfo)+",",\
               (len(addrs) > 1 and "["+", ".join(map(lambda (s): "CHAOS {:o}".format(s),addrs))+"]" \
                or "CHAOS {:o}".format(addrs[0]))+\
                ", USER, "+hinfo['OS']+", "+hinfo['CPU']+\
                (len(haliases) > 0 and ", ["+", ".join(map(lambda (x):maybe_prune_domain_parent(x,hinfo),haliases))+"]" \
                 or "")
+    except KeyError:
+        print >> sys.stderr,"## Host info error for",hname,"HINFO",hinfo
+        ## terminate line started within try
+        print
 
 # Print a hosts file in some format
 def hostsfile(soas,haddrs,hostformatter,netformatter):
@@ -251,7 +262,7 @@ def main(argv):
     if not(h3 or lispm):
         print >> sys.stderr, "use\n -3 for hosts3 format,\n",\
               " -l for lispm format\n",\
-              " -d dom for local domain\n",\
+              " -d dom for local domain (including ending .)\n",\
               " -a to remove aosnet.CH from ITS aliases"
         sys.exit(1)
     z = get_ch_addr_zone()
