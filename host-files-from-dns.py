@@ -90,7 +90,7 @@ soas = {}
 def get_ch_addr_zone():
     z = dns.zone.from_xfr(dns.query.xfr('130.238.19.25', 'ch-addr.net.', rdclass=dns.rdataclass.CH))
     soa = z.find_rdataset('@', dns.rdatatype.SOA)
-    print(";;; Generated on", date.today().isoformat(),\
+    print(";;; Generated on", date.today().isoformat(),
           "based on CH-ADDR.NET serial", soa[0].serial)
     # soas['CH-ADDR.NET.'] = soa[0].serial
     return z
@@ -172,10 +172,10 @@ def h3textnet(net, name):
 def h3texthost(hname, haliases, addrs, hinfo):
     global aosnet_its_pruning
     try:
-        print("HOST", ":", ", ".join(["CHAOS {:o}".format(s) for s in addrs]),\
-              ":", maybe_prune_domain_parent(dns.name.from_text(hname).to_text(omit_final_dot=True), hinfo)+\
-              (len(haliases) > 0 and ", " or "")+\
-              ", ".join([maybe_prune_domain_parent(x, hinfo) for x in haliases]),\
+        print("HOST", ":", ", ".join(["CHAOS {:o}".format(s) for s in addrs]),
+              ":", maybe_prune_domain_parent(dns.name.from_text(hname).to_text(omit_final_dot=True), hinfo)+
+              (len(haliases) > 0 and ", " or "")+
+              ", ".join([maybe_prune_domain_parent(x, hinfo) for x in haliases]),
               ":", hinfo['CPU'], ":", hinfo['OS'], ": :")
     except KeyError:
         print("## Host info error for", hname, "HINFO", hinfo, file=sys.stderr)
@@ -191,11 +191,11 @@ def lispmhost(hname, haliases, addrs, hinfo):
     global aosnet_its_pruning
     ## USER vs SERVER vs TIP vs UNKNOWN - does anybody care? I don't.
     try:
-        print("HOST", maybe_prune_domain_parent(dns.name.from_text(hname).to_text(omit_final_dot=True), hinfo)+",",\
-              (len(addrs) > 1 and "["+", ".join(["CHAOS {:o}".format(s) for s in addrs])+"]" \
-               or "CHAOS {:o}".format(addrs[0]))+\
-               ", USER, "+hinfo['OS']+", "+hinfo['CPU']+\
-               (len(haliases) > 0 and ", ["+", ".join([maybe_prune_domain_parent(x, hinfo) for x in haliases])+"]" \
+        print("HOST", maybe_prune_domain_parent(dns.name.from_text(hname).to_text(omit_final_dot=True), hinfo)+",",
+              (len(addrs) > 1 and "["+", ".join(["CHAOS {:o}".format(s) for s in addrs])+"]" 
+               or "CHAOS {:o}".format(addrs[0]))+
+               ", USER, "+hinfo['OS']+", "+hinfo['CPU']+
+               (len(haliases) > 0 and ", ["+", ".join([maybe_prune_domain_parent(x, hinfo) for x in haliases])+"]"
                 or ""))
     except KeyError:
         print("## Host info error for", hname, "HINFO", hinfo, file=sys.stderr)
@@ -220,7 +220,7 @@ def hostsfile(soas, haddrs, hostformatter, netformatter):
         (a, hinfo, rp, txt) = get_host_info(n)
         # check if dnspython supports Chaos A records (len(a) > 0), otherwise ignore difference
         if len(a) > 0 and len(set(haddrs[n])) != len(set(a)):
-            print("## For", n, "A is", list(map(oct, set(a))), "which is different from CH-ADDR.NET",\
+            print("## For", n, "A is", list(map(oct, set(a))), "which is different from CH-ADDR.NET",
                   list(map(oct, set(haddrs[n]))), file=sys.stderr)
             if len(set(a)) < 3 and len(set(haddrs[n])) >= 3:
                 # See https://gitlab.isc.org/isc-projects/bind9/issues/562
@@ -240,9 +240,9 @@ def main(argv):
     try:
         opts, args = getopt.getopt(argv, "3lad:")
     except getopt.GetoptError:
-        print("use\n -3 for hosts3 format,\n",\
-              " -l for lispm format\n",\
-              " -d dom for local domain\n",\
+        print("use\n -3 for hosts3 format,\n",
+              " -l for lispm format\n",
+              " -d dom for local domain\n",
               " -a to remove aosnet.CH from ITS aliases", file=sys.stderr)
         sys.exit(1)
     h3 = False
@@ -260,9 +260,9 @@ def main(argv):
                 print("Bad -d domain", arg, file=sys.stderr)
                 sys.exit(1)
     if not(h3 or lispm):
-        print("use\n -3 for hosts3 format,\n",\
-              " -l for lispm format\n",\
-              " -d dom for local domain (including ending .)\n",\
+        print("use\n -3 for hosts3 format,\n",
+              " -l for lispm format\n",
+              " -d dom for local domain (including ending .)\n",
               " -a to remove aosnet.CH from ITS aliases", file=sys.stderr)
         sys.exit(1)
     z = get_ch_addr_zone()
