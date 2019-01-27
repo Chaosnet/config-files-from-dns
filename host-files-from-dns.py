@@ -233,7 +233,7 @@ def hostsfile(soas, haddrs, hostformatter, netformatter):
         else:
             al = []
         hostformatter(n, n in aliases and aliases[n] or [], a, hinfo)
-        
+
 
 def main(argv):
     global aosnet_its_pruning, local_domain
