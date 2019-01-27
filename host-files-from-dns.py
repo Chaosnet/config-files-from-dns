@@ -215,7 +215,7 @@ def hostsfile(soas,haddrs,hostformatter,netformatter):
     print()
     # Sorted by reversed domain name
     hnames = list(haddrs.keys())
-    hnames.sort(key=lambda x: ".".join(reversed(list(dns.name.from_text(x).labels))))
+    hnames.sort(key=lambda x: ".".join(reversed(list(str(dns.name.from_text(x).labels)))))
     for n in hnames:
         (a,hinfo,rp,txt) = get_host_info(n)
         # check if dnspython supports Chaos A records (len(a) > 0), otherwise ignore difference
