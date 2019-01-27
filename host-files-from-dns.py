@@ -192,7 +192,7 @@ def lispmhost(hname, haliases, addrs, hinfo):
     ## USER vs SERVER vs TIP vs UNKNOWN - does anybody care? I don't.
     try:
         print("HOST", maybe_prune_domain_parent(dns.name.from_text(hname).to_text(omit_final_dot=True), hinfo)+",",
-              (len(addrs) > 1 and "["+", ".join(["CHAOS {:o}".format(s) for s in addrs])+"]" 
+              (len(addrs) > 1 and "["+", ".join(["CHAOS {:o}".format(s) for s in addrs])+"]"
                or "CHAOS {:o}".format(addrs[0])) +
               ", USER, "+hinfo['OS']+", "+hinfo['CPU'] +
               (len(haliases) > 0 and ", ["+", ".join([maybe_prune_domain_parent(x, hinfo) for x in haliases])+"]"
