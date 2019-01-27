@@ -45,7 +45,7 @@ def get_host_info(name, printJunk = False):
     a = []
     txt = ""
     try:
-        h = dns.query.udp(dns.message.make_query(name,dns.rdatatype.ANY,rdclass=dns.rdataclass.CH),'130.238.19.25')
+        h = dns.query.udp(dns.message.make_query(name, dns.rdatatype.ANY, rdclass=dns.rdataclass.CH), '130.238.19.25')
         # answer is a set, find only the interesting ones
         for t in h.answer:
             # t is a dns.rrset.RRset object
@@ -60,12 +60,12 @@ def get_host_info(name, printJunk = False):
             elif t.rdtype == dns.rdatatype.RP:
                 # Not used
                 for d in t:
-                    (u,dom) = d.mbox.split(len(d.mbox.labels)-1)
+                    (u, dom) = d.mbox.split(len(d.mbox.labels)-1)
                     # @@@@ should unescape u (\. => .)
-                    em = "{0}@{1}".format(u.to_text(),dom.to_text(omit_final_dot=True))
+                    em = "{0}@{1}".format(u.to_text(), dom.to_text(omit_final_dot=True))
                     rptxt = []
                     if not(d.txt == dns.name.root):
-                        rps = dns.query.udp(dns.message.make_query(str(d.txt),dns.rdatatype.TXT,rdclass=dns.rdataclass.CH),'130.238.19.25')
+                        rps = dns.query.udp(dns.message.make_query(str(d.txt), dns.rdatatype.TXT, rdclass=dns.rdataclass.CH), '130.238.19.25')
                         for rp in rps.answer:
                             for t in rp:
                                 rptxt.append(t.to_text())
@@ -80,18 +80,18 @@ def get_host_info(name, printJunk = False):
             elif printJunk:
                 print(dns.rdatatype.to_text(t.rdtype), end=' ', file=sys.stderr)
                 for d in t:
-                    print("-",d.to_text(), file=sys.stderr)
+                    print("-", d.to_text(), file=sys.stderr)
     except dns.exception.DNSException as e:
-        print("Error",e, file=sys.stderr)
-    return (a,hinfo,rpdict,txt)
+        print("Error", e, file=sys.stderr)
+    return (a, hinfo, rpdict, txt)
 
 soas = {}
 
 def get_ch_addr_zone():
-    z = dns.zone.from_xfr(dns.query.xfr('130.238.19.25','ch-addr.net.',rdclass=dns.rdataclass.CH))
-    soa = z.find_rdataset('@',dns.rdatatype.SOA)
-    print(";;; Generated on",date.today().isoformat(),\
-          "based on CH-ADDR.NET serial",soa[0].serial)
+    z = dns.zone.from_xfr(dns.query.xfr('130.238.19.25', 'ch-addr.net.', rdclass=dns.rdataclass.CH))
+    soa = z.find_rdataset('@', dns.rdatatype.SOA)
+    print(";;; Generated on", date.today().isoformat(),\
+          "based on CH-ADDR.NET serial", soa[0].serial)
     # soas['CH-ADDR.NET.'] = soa[0].serial
     return z
 
@@ -104,16 +104,16 @@ def collect_all_hosts(z):
     global haddrs, doms, nets
     for (addr, ttl, rdata) in z.iterate_rdatas('PTR'):
         if rdata.rdtype == dns.rdatatype.PTR:
-            if int(addr.to_text(),8) & 0xff != 0:
+            if int(addr.to_text(), 8) & 0xff != 0:
                 hname = rdata.target.to_text()
                 addstr = addr.to_text()
                 if hname not in haddrs:
                     haddrs[hname] = []
-                haddrs[hname].append(int(addstr,8))
+                haddrs[hname].append(int(addstr, 8))
                 doms.add(rdata.target.parent().to_text())
             else:
                 nname = rdata.target.to_text(omit_final_dot=True)
-                addstr = "{:o}".format(int(addr.to_text(),8)>>8)
+                addstr = "{:o}".format(int(addr.to_text(), 8)>>8)
                 nets[addstr] = nname
 
 # Scan for CNAMEs in relevant zones
@@ -125,17 +125,17 @@ def scan_for_cnames(doms):
         #### Should look up the NS (in the IN class) of the domain, and use the NS for that
         # need to try all NS, and perhaps all their addresses.
         # Too much bother as long as Psilo knows everything
-        za = dns.zone.from_xfr(dns.query.xfr('130.238.19.25',dom,rdclass=dns.rdataclass.CH,relativize=False),relativize=False)
+        za = dns.zone.from_xfr(dns.query.xfr('130.238.19.25', dom, rdclass=dns.rdataclass.CH, relativize=False), relativize=False)
         soa = za.find_rdataset(dom, dns.rdatatype.SOA)
         soas[dom] = soa[0].serial
-        for (name,ttl,rdata) in za.iterate_rdatas('CNAME'):
+        for (name, ttl, rdata) in za.iterate_rdatas('CNAME'):
             alias = name.to_text(omit_final_dot=True)
             host = rdata.target.to_text()
             if host not in aliases:
                 aliases[host] = []
             aliases[host].append(alias)
 
-def parent_domain_equal_to(child,domain):
+def parent_domain_equal_to(child, domain):
     # BUG: doing == on dns.name.Name should be case insensitive!!
     ll = dns.name.from_text(child)
     # for python 3?
@@ -145,21 +145,21 @@ def parent_domain_equal_to(child,domain):
 # return the first label of dom (a string)
 def domain_first_label(dom):
     ll = dns.name.from_text(dom)
-    (hd,tl) = ll.split(len(ll.labels)-1)
+    (hd, tl) = ll.split(len(ll.labels)-1)
     return hd.to_text()
 
 # based on aosnet_its_pruning and local_domain
-def maybe_prune_domain_parent(a,hinfo):
+def maybe_prune_domain_parent(a, hinfo):
     global aosnet_its_pruning, local_domain
-    if (aosnet_its_pruning and hinfo['OS'] == "ITS" and parent_domain_equal_to(a,"aosnet.CH.")) \
-           or (local_domain != None and parent_domain_equal_to(a,local_domain)):
+    if (aosnet_its_pruning and hinfo['OS'] == "ITS" and parent_domain_equal_to(a, "aosnet.CH.")) \
+           or (local_domain != None and parent_domain_equal_to(a, local_domain)):
         return domain_first_label(a)
     else:
         return a
 
 # Print a NET entry in h3text format - hack
 h3netprinted = False
-def h3textnet(net,name):
+def h3textnet(net, name):
     global h3netprinted
     if not h3netprinted:
         # @@@@ look up where it is wired, and fix it?
@@ -169,59 +169,59 @@ def h3textnet(net,name):
         h3netprinted = True
 
 # print a HOST entry in h3text format
-def h3texthost(hname,haliases,addrs,hinfo):
+def h3texthost(hname, haliases, addrs, hinfo):
     global aosnet_its_pruning
     try:
-        print("HOST",":",", ".join(["CHAOS {:o}".format(s) for s in addrs]),\
-              ":",maybe_prune_domain_parent(dns.name.from_text(hname).to_text(omit_final_dot=True),hinfo)+\
+        print("HOST", ":", ", ".join(["CHAOS {:o}".format(s) for s in addrs]),\
+              ":", maybe_prune_domain_parent(dns.name.from_text(hname).to_text(omit_final_dot=True), hinfo)+\
               (len(haliases) > 0 and ", " or "")+\
-              ", ".join([maybe_prune_domain_parent(x,hinfo) for x in haliases]),\
-              ":",hinfo['CPU'],":",hinfo['OS'],": :")
+              ", ".join([maybe_prune_domain_parent(x, hinfo) for x in haliases]),\
+              ":", hinfo['CPU'], ":", hinfo['OS'], ": :")
     except KeyError:
-        print("## Host info error for",hname,"HINFO",hinfo, file=sys.stderr)
+        print("## Host info error for", hname, "HINFO", hinfo, file=sys.stderr)
         ## terminate line started within try
         print()
 
 # Print a lispm format NET entry
-def lispmnet(net,name):
-    print("NET",net+",",name)
+def lispmnet(net, name):
+    print("NET", net+",", name)
 
 # Print a lispm format HOST entry
-def lispmhost(hname,haliases,addrs,hinfo):
+def lispmhost(hname, haliases, addrs, hinfo):
     global aosnet_its_pruning
     ## USER vs SERVER vs TIP vs UNKNOWN - does anybody care? I don't.
     try:
-        print("HOST",maybe_prune_domain_parent(dns.name.from_text(hname).to_text(omit_final_dot=True),hinfo)+",",\
+        print("HOST", maybe_prune_domain_parent(dns.name.from_text(hname).to_text(omit_final_dot=True), hinfo)+",",\
               (len(addrs) > 1 and "["+", ".join(["CHAOS {:o}".format(s) for s in addrs])+"]" \
                or "CHAOS {:o}".format(addrs[0]))+\
                ", USER, "+hinfo['OS']+", "+hinfo['CPU']+\
-               (len(haliases) > 0 and ", ["+", ".join([maybe_prune_domain_parent(x,hinfo) for x in haliases])+"]" \
+               (len(haliases) > 0 and ", ["+", ".join([maybe_prune_domain_parent(x, hinfo) for x in haliases])+"]" \
                 or ""))
     except KeyError:
-        print("## Host info error for",hname,"HINFO",hinfo, file=sys.stderr)
+        print("## Host info error for", hname, "HINFO", hinfo, file=sys.stderr)
         ## terminate line started within try
         print()
 
 # Print a hosts file in some format
-def hostsfile(soas,haddrs,hostformatter,netformatter):
+def hostsfile(soas, haddrs, hostformatter, netformatter):
     for d in soas:
-        print(";; and on serial",soas[d],"of",d)
+        print(";; and on serial", soas[d], "of", d)
     print()
     # sorted by net number
     nnums = list(nets.keys())
-    nnums.sort(key=lambda x: int(x,8))
+    nnums.sort(key=lambda x: int(x, 8))
     for n in nnums:
-        netformatter(n,nets[n])
+        netformatter(n, nets[n])
     print()
     # Sorted by reversed domain name
     hnames = list(haddrs.keys())
     hnames.sort(key=lambda x: ".".join(reversed(list(str(dns.name.from_text(x).labels)))))
     for n in hnames:
-        (a,hinfo,rp,txt) = get_host_info(n)
+        (a, hinfo, rp, txt) = get_host_info(n)
         # check if dnspython supports Chaos A records (len(a) > 0), otherwise ignore difference
         if len(a) > 0 and len(set(haddrs[n])) != len(set(a)):
-            print("## For",n,"A is",list(map(oct,set(a))),"which is different from CH-ADDR.NET",\
-                  list(map(oct,set(haddrs[n]))), file=sys.stderr)
+            print("## For", n, "A is", list(map(oct, set(a))), "which is different from CH-ADDR.NET",\
+                  list(map(oct, set(haddrs[n]))), file=sys.stderr)
             if len(set(a)) < 3 and len(set(haddrs[n])) >= 3:
                 # See https://gitlab.isc.org/isc-projects/bind9/issues/562
                 print("## This is probably caused the DNS server not being updated yet", file=sys.stderr)
@@ -238,7 +238,7 @@ def hostsfile(soas,haddrs,hostformatter,netformatter):
 def main(argv):
     global aosnet_its_pruning, local_domain
     try:
-        opts, args = getopt.getopt(argv,"3lad:")
+        opts, args = getopt.getopt(argv, "3lad:")
     except getopt.GetoptError:
         print("use\n -3 for hosts3 format,\n",\
               " -l for lispm format\n",\
@@ -247,7 +247,7 @@ def main(argv):
         sys.exit(1)
     h3 = False
     lispm = False
-    for opt,arg in opts:
+    for opt, arg in opts:
         if opt == '-3':
             h3 = True
         elif opt == '-l':
@@ -257,7 +257,7 @@ def main(argv):
         elif opt == '-d':
             local_domain = arg
             if dns.name.from_text(local_domain) == None:
-                print("Bad -d domain",arg, file=sys.stderr)
+                print("Bad -d domain", arg, file=sys.stderr)
                 sys.exit(1)
     if not(h3 or lispm):
         print("use\n -3 for hosts3 format,\n",\
@@ -269,9 +269,9 @@ def main(argv):
     collect_all_hosts(z)
     scan_for_cnames(doms)
     if h3:
-        hostsfile(soas,haddrs,h3texthost,h3textnet)
+        hostsfile(soas, haddrs, h3texthost, h3textnet)
     elif lispm:
-        hostsfile(soas,haddrs,lispmhost,lispmnet)
+        hostsfile(soas, haddrs, lispmhost, lispmnet)
 
 if __name__ == "__main__":
     main(sys.argv[1:])
