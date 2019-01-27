@@ -4,9 +4,13 @@ Generate Chaos host info from DNS
 - BSD hosts file [see https://github.com/LM-3/chaos/issues/61] (same format as LISPM?)
 
 Options:
+
  -3 to generate hosts3 format ("extended" RFC 810) for ITS
+ 
  -l to generate lispm format (RFC 608, I think) which looks like it matches the 4.1BSD format?
+ 
  -a to remove trailing .aosnet.CH domain in aliases (so you can parse two-letter abbrevs easily)
+ 
  -d domain to set local domain, which is also removed from aliases
 
 Requires dnspython, which is at https://github.com/rthalley/dnspython,
