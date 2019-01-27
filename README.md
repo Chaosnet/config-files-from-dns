@@ -13,5 +13,5 @@ Options:
  
  -d domain to set local domain, which is also removed from aliases
 
-Requires dnspython, which is at https://github.com/rthalley/dnspython,
+Requires dnspython, which is at https://github.com/rthalley/dnspython.
 
