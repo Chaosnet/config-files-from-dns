@@ -173,8 +173,8 @@ def h3texthost(hname, haliases, addrs, hinfo):
     global aosnet_its_pruning
     try:
         print("HOST", ":", ", ".join(["CHAOS {:o}".format(s) for s in addrs]),
-              ":", maybe_prune_domain_parent(dns.name.from_text(hname).to_text(omit_final_dot=True), hinfo)+
-              (len(haliases) > 0 and ", " or "")+
+              ":", maybe_prune_domain_parent(dns.name.from_text(hname).to_text(omit_final_dot=True), hinfo) +
+              (len(haliases) > 0 and ", " or "") +
               ", ".join([maybe_prune_domain_parent(x, hinfo) for x in haliases]),
               ":", hinfo['CPU'], ":", hinfo['OS'], ": :")
     except KeyError:
@@ -193,8 +193,8 @@ def lispmhost(hname, haliases, addrs, hinfo):
     try:
         print("HOST", maybe_prune_domain_parent(dns.name.from_text(hname).to_text(omit_final_dot=True), hinfo)+",",
               (len(addrs) > 1 and "["+", ".join(["CHAOS {:o}".format(s) for s in addrs])+"]" 
-               or "CHAOS {:o}".format(addrs[0]))+
-               ", USER, "+hinfo['OS']+", "+hinfo['CPU']+
+               or "CHAOS {:o}".format(addrs[0])) +
+               ", USER, "+hinfo['OS']+", "+hinfo['CPU'] +
                (len(haliases) > 0 and ", ["+", ".join([maybe_prune_domain_parent(x, hinfo) for x in haliases])+"]"
                 or ""))
     except KeyError:
