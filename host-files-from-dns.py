@@ -39,7 +39,7 @@ from datetime import date
 aosnet_its_pruning = False
 local_domain = None
 
-def get_host_info(name, printJunk = False):
+def get_host_info(name, printJunk=False):
     hinfo = {}
     rpdict = {}
     a = []
