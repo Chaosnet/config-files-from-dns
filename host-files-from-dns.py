@@ -113,7 +113,7 @@ def collect_all_hosts(z):
                 doms.add(rdata.target.parent().to_text())
             else:
                 nname = rdata.target.to_text(omit_final_dot=True)
-                addstr = "{:o}".format(int(addr.to_text(), 8)>>8)
+                addstr = "{:o}".format(int(addr.to_text(), 8) >> 8)
                 nets[addstr] = nname
 
 # Scan for CNAMEs in relevant zones
