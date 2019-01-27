@@ -152,7 +152,7 @@ def domain_first_label(dom):
 def maybe_prune_domain_parent(a, hinfo):
     global aosnet_its_pruning, local_domain
     if (aosnet_its_pruning and hinfo['OS'] == "ITS" and parent_domain_equal_to(a, "aosnet.CH.")) \
-           or (local_domain != None and parent_domain_equal_to(a, local_domain)):
+       or (local_domain != None and parent_domain_equal_to(a, local_domain)):
         return domain_first_label(a)
     else:
         return a
@@ -194,9 +194,9 @@ def lispmhost(hname, haliases, addrs, hinfo):
         print("HOST", maybe_prune_domain_parent(dns.name.from_text(hname).to_text(omit_final_dot=True), hinfo)+",",
               (len(addrs) > 1 and "["+", ".join(["CHAOS {:o}".format(s) for s in addrs])+"]" 
                or "CHAOS {:o}".format(addrs[0])) +
-               ", USER, "+hinfo['OS']+", "+hinfo['CPU'] +
-               (len(haliases) > 0 and ", ["+", ".join([maybe_prune_domain_parent(x, hinfo) for x in haliases])+"]"
-                or ""))
+              ", USER, "+hinfo['OS']+", "+hinfo['CPU'] +
+              (len(haliases) > 0 and ", ["+", ".join([maybe_prune_domain_parent(x, hinfo) for x in haliases])+"]"
+               or ""))
     except KeyError:
         print("## Host info error for", hname, "HINFO", hinfo, file=sys.stderr)
         ## terminate line started within try
