@@ -51,8 +51,8 @@ def get_host_info(name, printJunk=False):
             # t is a dns.rrset.RRset object
             if t.rdtype == dns.rdatatype.HINFO:
                 for d in t:
-                    hinfo['OS'] = str(d.os)
-                    hinfo['CPU'] = str(d.cpu)
+                    hinfo['OS'] = str(d.os.decode())
+                    hinfo['CPU'] = str(d.cpu.decode())
             elif t.rdtype == dns.rdatatype.TXT:
                 # Not used
                 for d in t:
