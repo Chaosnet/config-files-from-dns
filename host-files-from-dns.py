@@ -10,7 +10,7 @@
 # Options:
 # -3 to generate hosts3 format ("extended" RFC 810) for ITS
 # -l to generate lispm format (RFC 608, I think) which looks like it matches the 4.1BSD format?
-# -a to remove trailing .aosnet.CH domain in aliases (so you can parse two-letter abbrevs easily)
+# -a to remove trailing .Chaosnet.NET domain in aliases (so you can parse two-letter abbrevs easily)
 # -d domain to set local domain, which is also removed from aliases
 
 # Should perhaps retain the original aliases?
@@ -151,7 +151,7 @@ def domain_first_label(dom):
 # based on aosnet_its_pruning and local_domain
 def maybe_prune_domain_parent(a, hinfo):
     global aosnet_its_pruning, local_domain
-    if (aosnet_its_pruning and hinfo['OS'] == "ITS" and parent_domain_equal_to(a, "aosnet.CH.")) \
+    if (aosnet_its_pruning and hinfo['OS'] == "ITS" and parent_domain_equal_to(a, "Chaosnet.NET.")) \
        or (local_domain != None and parent_domain_equal_to(a, local_domain)):
         return domain_first_label(a)
     else:
@@ -243,7 +243,7 @@ def main(argv):
         print("use\n -3 for hosts3 format,\n",
               " -l for lispm format\n",
               " -d dom for local domain\n",
-              " -a to remove aosnet.CH from ITS aliases", file=sys.stderr)
+              " -a to remove Chaosnet.NET from ITS aliases", file=sys.stderr)
         sys.exit(1)
     h3 = False
     lispm = False
