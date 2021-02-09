@@ -263,7 +263,7 @@ def main(argv):
         print("use\n -3 for hosts3 format,\n",
               " -l for lispm format\n",
               " -d dom for local domain (including ending .)\n",
-              " -a to remove aosnet.CH from ITS aliases", file=sys.stderr)
+              " -a to remove Chaosnet.NET from ITS aliases", file=sys.stderr)
         sys.exit(1)
     z = get_ch_addr_zone()
     collect_all_hosts(z)
