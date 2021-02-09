@@ -9,7 +9,7 @@ Options:
  
  -l to generate lispm format (RFC 608, I think) which looks like it matches the 4.1BSD format?
  
- -a to remove trailing .aosnet.CH domain in aliases (so you can parse two-letter abbrevs easily)
+ -a to remove trailing .Chaosnet.NET domain in aliases (so you can parse two-letter abbrevs easily)
  
  -d domain to set local domain, which is also removed from aliases
 
