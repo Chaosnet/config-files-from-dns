@@ -10,14 +10,12 @@
 # Options:
 # -3 to generate hosts3 format ("extended" RFC 810) for ITS
 # -l to generate lispm format (RFC 608, I think) which looks like it matches the 4.1BSD format?
+# -i to generate a list of short ITS names, suitable for ITSIRP in SYSTEM;CONFIG
 # -a to remove trailing .Chaosnet.NET domain in aliases (so you can parse two-letter abbrevs easily)
 # -d domain to set local domain, which is also removed from aliases
 
 # Should perhaps retain the original aliases?
 # Should perhaps strip the local domain from the main name too, if the short one should be the canonical?
-
-# TODO:
-#  Generate ITS config for the "global ITS" (Lars?)
 
 # Note to self:
 # don't forget PYTHONPATH=whereverdnspythonsis:
@@ -175,12 +173,24 @@ def h3texthost(hname, haliases, addrs, hinfo):
         print("HOST", ":", ", ".join(["CHAOS {:o}".format(s) for s in addrs]),
               ":", maybe_prune_domain_parent(dns.name.from_text(hname).to_text(omit_final_dot=True), hinfo) +
               (len(haliases) > 0 and ", " or "") +
-              ", ".join([maybe_prune_domain_parent(x, hinfo) for x in haliases]),
+              ", ".join(set([maybe_prune_domain_parent(x, hinfo) for x in haliases])),
               ":", hinfo['CPU'], ":", hinfo['OS'], ": :")
     except KeyError:
         print("## Host info error for", hname, "HINFO", hinfo, file=sys.stderr)
         ## terminate line started within try
         print()
+
+def itslist(haddrs):
+    hnames = list(haddrs.keys())
+    itses = []
+    for n in hnames:
+        (a, hinfo, x, y) = get_host_info(n)
+        if 'OS' in hinfo and hinfo['OS'] == 'ITS':
+            nms = list(map(lambda x: maybe_prune_domain_parent(x, hinfo), aliases[n]))
+            nms.sort(key=lambda x: len(x))
+            itses.append(nms[0])
+    print(" ".join(itses))
+
 
 # Print a lispm format NET entry
 def lispmnet(net, name):
@@ -195,7 +205,7 @@ def lispmhost(hname, haliases, addrs, hinfo):
               (len(addrs) > 1 and "["+", ".join(["CHAOS {:o}".format(s) for s in addrs])+"]"
                or "CHAOS {:o}".format(addrs[0])) +
               ", USER, "+hinfo['OS']+", "+hinfo['CPU'] +
-              (len(haliases) > 0 and ", ["+", ".join([maybe_prune_domain_parent(x, hinfo) for x in haliases])+"]"
+              (len(haliases) > 0 and ", ["+", ".join(set([maybe_prune_domain_parent(x, hinfo) for x in haliases]))+"]"
                or ""))
     except KeyError:
         print("## Host info error for", hname, "HINFO", hinfo, file=sys.stderr)
@@ -234,19 +244,25 @@ def hostsfile(soas, haddrs, hostformatter, netformatter):
             al = []
         hostformatter(n, n in aliases and aliases[n] or [], a, hinfo)
 
+def usage():
+    print("use\n",
+              " -3 for hosts3 format,\n",
+              " -l for lispm format\n",
+              " -d dom for local domain\n",
+              " -i to create a list of ITS shortnames, suitable for ITSIRP in SYSTEM;CONFIG\n",
+              " -a to remove Chaosnet.NET from ITS aliases", file=sys.stderr)
+
 
 def main(argv):
     global aosnet_its_pruning, local_domain
     try:
-        opts, args = getopt.getopt(argv, "3lad:")
+        opts, args = getopt.getopt(argv, "3laid:")
     except getopt.GetoptError:
-        print("use\n -3 for hosts3 format,\n",
-              " -l for lispm format\n",
-              " -d dom for local domain\n",
-              " -a to remove Chaosnet.NET from ITS aliases", file=sys.stderr)
+        usage()
         sys.exit(1)
     h3 = False
     lispm = False
+    its_shortnames_only = False
     for opt, arg in opts:
         if opt == '-3':
             h3 = True
@@ -254,16 +270,16 @@ def main(argv):
             lispm = True
         elif opt == '-a':
             aosnet_its_pruning = True
+        elif opt == '-i':
+            its_shortnames_only = True
+            aosnet_its_pruning = True
         elif opt == '-d':
             local_domain = arg
             if dns.name.from_text(local_domain) == None:
                 print("Bad -d domain", arg, file=sys.stderr)
                 sys.exit(1)
-    if not(h3 or lispm):
-        print("use\n -3 for hosts3 format,\n",
-              " -l for lispm format\n",
-              " -d dom for local domain (including ending .)\n",
-              " -a to remove Chaosnet.NET from ITS aliases", file=sys.stderr)
+    if not(h3 or lispm or its_shortnames_only):
+        usage()
         sys.exit(1)
     z = get_ch_addr_zone()
     collect_all_hosts(z)
@@ -272,6 +288,8 @@ def main(argv):
         hostsfile(soas, haddrs, h3texthost, h3textnet)
     elif lispm:
         hostsfile(soas, haddrs, lispmhost, lispmnet)
+    elif its_shortnames_only:
+        itslist(haddrs)
 
 if __name__ == "__main__":
     main(sys.argv[1:])

@@ -11,6 +11,8 @@ Options:
  
  -a to remove trailing .Chaosnet.NET domain in aliases (so you can parse two-letter abbrevs easily)
  
+ -i to create a list of ITS shortnames, suitable for def of ITSIRP in SYSTEM;CONFIG
+
  -d domain to set local domain, which is also removed from aliases
 
 Requires dnspython, which is at https://github.com/rthalley/dnspython.
