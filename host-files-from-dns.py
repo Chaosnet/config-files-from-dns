@@ -33,6 +33,7 @@ import struct
 import sys
 import getopt
 from datetime import date
+from socket import gethostbyname
 
 aosnet_its_pruning = False
 local_domain = None
@@ -43,7 +44,7 @@ def get_host_info(name, printJunk=False):
     a = []
     txt = ""
     try:
-        h = dns.query.udp(dns.message.make_query(name, dns.rdatatype.ANY, rdclass=dns.rdataclass.CH), '130.238.19.25')
+        h = dns.query.udp(dns.message.make_query(name, dns.rdatatype.ANY, rdclass=dns.rdataclass.CH), gethostbyname('dns.chaosnet.net'))
         # answer is a set, find only the interesting ones
         for t in h.answer:
             # t is a dns.rrset.RRset object
@@ -63,7 +64,7 @@ def get_host_info(name, printJunk=False):
                     em = "{0}@{1}".format(u.to_text(), dom.to_text(omit_final_dot=True))
                     rptxt = []
                     if not(d.txt == dns.name.root):
-                        rps = dns.query.udp(dns.message.make_query(str(d.txt), dns.rdatatype.TXT, rdclass=dns.rdataclass.CH), '130.238.19.25')
+                        rps = dns.query.udp(dns.message.make_query(str(d.txt), dns.rdatatype.TXT, rdclass=dns.rdataclass.CH), gethostbyname('dns.chaosnet.net'))
                         for rp in rps.answer:
                             for t in rp:
                                 rptxt.append(t.to_text())
@@ -86,7 +87,7 @@ def get_host_info(name, printJunk=False):
 soas = {}
 
 def get_ch_addr_zone():
-    z = dns.zone.from_xfr(dns.query.xfr('130.238.19.25', 'ch-addr.net.', rdclass=dns.rdataclass.CH))
+    z = dns.zone.from_xfr(dns.query.xfr(gethostbyname('dns.chaosnet.net'), 'ch-addr.net.', rdclass=dns.rdataclass.CH))
     soa = z.find_rdataset('@', dns.rdatatype.SOA)
     print(";;; Generated on", date.today().isoformat(),
           "based on CH-ADDR.NET serial", soa[0].serial)
@@ -123,7 +124,7 @@ def scan_for_cnames(doms):
         #### Should look up the NS (in the IN class) of the domain, and use the NS for that
         # need to try all NS, and perhaps all their addresses.
         # Too much bother as long as Psilo knows everything
-        za = dns.zone.from_xfr(dns.query.xfr('130.238.19.25', dom, rdclass=dns.rdataclass.CH, relativize=False), relativize=False)
+        za = dns.zone.from_xfr(dns.query.xfr(gethostbyname('dns.chaosnet.net'), dom, rdclass=dns.rdataclass.CH, relativize=False), relativize=False)
         soa = za.find_rdataset(dom, dns.rdatatype.SOA)
         soas[dom] = soa[0].serial
         for (name, ttl, rdata) in za.iterate_rdatas('CNAME'):
