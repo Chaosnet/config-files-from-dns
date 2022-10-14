@@ -109,7 +109,10 @@ def collect_all_hosts(z):
                 if hname not in haddrs:
                     haddrs[hname] = []
                 haddrs[hname].append(int(addstr, 8))
-                doms.add(rdata.target.parent().to_text())
+                # Only collect non-TLDs
+                pdom = rdata.target.parent().to_text(omit_final_dot=True)
+                domstr = "{}.".format(pdom) if "." in  pdom else rdata.target.to_text()
+                doms.add(domstr)
             else:
                 nname = rdata.target.to_text(omit_final_dot=True)
                 addstr = "{:o}".format(int(addr.to_text(), 8) >> 8)
