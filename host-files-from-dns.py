@@ -75,6 +75,7 @@ def get_host_info(name, printJunk=False):
                         a.append(d.address)
                 except AttributeError:
                     # dnspython not updated with support for Chaos A records
+                    print("## A failure for {}".format(name), file=sys.stderr)
                     a = a
             elif printJunk:
                 print(dns.rdatatype.to_text(t.rdtype), end=' ', file=sys.stderr)
@@ -132,7 +133,7 @@ def scan_for_cnames(doms):
         soas[dom] = soa[0].serial
         for (name, ttl, rdata) in za.iterate_rdatas('CNAME'):
             alias = name.to_text(omit_final_dot=True)
-            host = rdata.target.to_text()
+            host = rdata.target.to_text().lower()
             if host not in aliases:
                 aliases[host] = []
             aliases[host].append(alias)
@@ -185,12 +186,13 @@ def h3texthost(hname, haliases, addrs, hinfo):
         print()
 
 def itslist(haddrs):
+    global aliases
     hnames = list(haddrs.keys())
     itses = []
     for n in hnames:
         (a, hinfo, x, y) = get_host_info(n)
         if 'OS' in hinfo and hinfo['OS'] == 'ITS':
-            nms = list(map(lambda x: maybe_prune_domain_parent(x, hinfo), aliases[n]))
+            nms = list(map(lambda x: maybe_prune_domain_parent(x, hinfo), aliases[n.lower()]))
             nms.sort(key=lambda x: len(x))
             itses.append(nms[0])
     print(" ".join(itses))
