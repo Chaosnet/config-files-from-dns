@@ -200,7 +200,9 @@ def itslist(haddrs):
 
 # Print a lispm format NET entry
 def lispmnet(net, name):
-    print("NET", net+",", name)
+    # Oddly, the NET number is decimal
+    hack = int(net,8)
+    print("NET", str(hack)+",", name)
 
 # Print a lispm format HOST entry
 def lispmhost(hname, haliases, addrs, hinfo):
@@ -226,10 +228,14 @@ def hostsfile(soas, haddrs, hostformatter, netformatter):
     # sorted by net number
     nnums = list(nets.keys())
     nnums.sort(key=lambda x: int(x, 8))
+    if len(nnums) > 0:
+        print(";; Network{}:", "s" if len(nnums) != 1 else "")
     for n in nnums:
         netformatter(n, nets[n])
     print()
     # Sorted by reversed domain name
+    if len(haddrs) > 0:
+        print("Host{}:", "s" if len(haddrs) != 1 else "")
     hnames = list(haddrs.keys())
     hnames.sort(key=lambda x: ".".join(reversed(list(str(dns.name.from_text(x).labels)))))
     for n in hnames:
@@ -252,11 +258,11 @@ def hostsfile(soas, haddrs, hostformatter, netformatter):
 
 def usage():
     print("use\n",
-              " -3 for hosts3 format,\n",
-              " -l for lispm format\n",
+              " -3 for hosts3 format (RFC 810),\n",
+              " -l for lispm format (RFC 752)\n",
               " -d dom for local domain\n",
               " -i to create a list of ITS shortnames, suitable for ITSIRP in SYSTEM;CONFIG\n",
-              " -a to remove Chaosnet.NET from ITS aliases", file=sys.stderr)
+              " -a to add short aliases for Chaosnet.NET hosts", file=sys.stderr)
 
 
 def main(argv):
