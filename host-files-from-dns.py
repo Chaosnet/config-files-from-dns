@@ -90,9 +90,9 @@ soas = {}
 def get_ch_addr_zone():
     z = dns.zone.from_xfr(dns.query.xfr(gethostbyname('dns.chaosnet.net'), 'ch-addr.net.', rdclass=dns.rdataclass.CH))
     soa = z.find_rdataset('@', dns.rdatatype.SOA)
-    print(";;; Generated on", date.today().isoformat(),
-          "based on CH-ADDR.NET serial", soa[0].serial)
+    print(";;; Generated on", date.today().isoformat())
     # soas['CH-ADDR.NET.'] = soa[0].serial
+    print(";; based on serial", soa[0].serial, "of CH-ADDR.NET.")
     return z
 
 haddrs = {}
@@ -229,13 +229,13 @@ def hostsfile(soas, haddrs, hostformatter, netformatter):
     nnums = list(nets.keys())
     nnums.sort(key=lambda x: int(x, 8))
     if len(nnums) > 0:
-        print(";; Network{}:", "s" if len(nnums) != 1 else "")
+        print(";; Network{}:".format("s" if len(nnums) != 1 else ""))
     for n in nnums:
         netformatter(n, nets[n])
     print()
     # Sorted by reversed domain name
     if len(haddrs) > 0:
-        print("Host{}:", "s" if len(haddrs) != 1 else "")
+        print(";; Host{}:".format("s" if len(haddrs) != 1 else ""))
     hnames = list(haddrs.keys())
     hnames.sort(key=lambda x: ".".join(reversed(list(str(dns.name.from_text(x).labels)))))
     for n in hnames:
