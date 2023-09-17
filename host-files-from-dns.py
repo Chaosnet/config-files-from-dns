@@ -179,7 +179,7 @@ def h3texthost(hname, haliases, addrs, hinfo):
               ":", maybe_prune_domain_parent(dns.name.from_text(hname).to_text(omit_final_dot=True), hinfo) +
               (len(haliases) > 0 and ", " or "") +
               ", ".join(set([maybe_prune_domain_parent(x, hinfo) for x in haliases])),
-              ":", hinfo['CPU'], ":", hinfo['OS'], ": :")
+              ":", hinfo['CPU'].upper(), ":", hinfo['OS'].upper(), ": :")
     except KeyError:
         print("## Host info error for", hname, "HINFO", hinfo, file=sys.stderr)
         ## terminate line started within try
@@ -212,7 +212,7 @@ def lispmhost(hname, haliases, addrs, hinfo):
         print("HOST", maybe_prune_domain_parent(dns.name.from_text(hname).to_text(omit_final_dot=True), hinfo)+",",
               (len(addrs) > 1 and "["+", ".join(["CHAOS {:o}".format(s) for s in addrs])+"]"
                or "CHAOS {:o}".format(addrs[0])) +
-              ", USER, "+hinfo['OS']+", "+hinfo['CPU'] +
+              ", USER, "+hinfo['OS'].upper()+", "+hinfo['CPU'].upper() +
               (len(haliases) > 0 and ", ["+", ".join(set([maybe_prune_domain_parent(x, hinfo) for x in haliases]))+"]"
                or ""))
     except KeyError:
@@ -229,7 +229,7 @@ def hostsfile(soas, haddrs, hostformatter, netformatter):
     nnums = list(nets.keys())
     nnums.sort(key=lambda x: int(x, 8))
     if len(nnums) > 0:
-        print(";; Network{}:".format("s" if len(nnums) != 1 else ""))
+        print(";; Network{} (decimal):".format("s" if len(nnums) != 1 else ""))
     for n in nnums:
         netformatter(n, nets[n])
     print()
