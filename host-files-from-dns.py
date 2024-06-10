@@ -250,11 +250,11 @@ def hostsfile(soas, haddrs, hostformatter, netformatter):
         # Use the longer list
         if len(a) < len(haddrs[n]):
             a = haddrs[n]
-        if n in aliases:
-            al = aliases[n]
+        if n.lower() in aliases:
+            al = aliases[n.lower()]
         else:
             al = []
-        hostformatter(n, n in aliases and aliases[n] or [], a, hinfo)
+        hostformatter(n, al, a, hinfo)
 
 def usage():
     print("use\n",
