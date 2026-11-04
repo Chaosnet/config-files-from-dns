@@ -14,5 +14,7 @@ Options:
 
  -d domain to set local domain, which is also adds aliases without the domain
 
+ -I to add IP addresses to those that have them
+
 Requires dnspython, which is at https://github.com/rthalley/dnspython.
 

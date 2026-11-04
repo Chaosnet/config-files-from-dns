@@ -14,6 +14,8 @@
 # -a to remove trailing .Chaosnet.NET domain in aliases (so you can parse two-letter abbrevs easily)
 # -d domain to set local domain, which is also removed from aliases
 
+# TODO: include IP addresses, if given some option
+
 # Should perhaps retain the original aliases?
 # Should perhaps strip the local domain from the main name too, if the short one should be the canonical?
 
@@ -21,9 +23,11 @@
 # don't forget PYTHONPATH=whereverdnspythonsis:
 # or similar
 
-# dnspython is at https://github.com/rthalley/dnspython,
-# and a fork which supports Chaos A records is at https://github.com/bictorv/dnspython/tree/chaos-addresses
-# (a PR has been done on Nov 12, 2018)
+# dnspython is at https://github.com/rthalley/dnspython.
+# Note that in PR #1383, strict compression rules were introduced
+# without fixing the parsing of Chaosnet A records, which breaks this
+# program.
+# I submitted PR #1410 on Nov 4, 2026, to fix this.
 
 import dns.resolver
 import dns.zone
@@ -37,6 +41,7 @@ from socket import gethostbyname
 
 aosnet_its_pruning = False
 local_domain = None
+add_ip = False
 
 def get_host_info(name, printJunk=False):
     hinfo = {}
@@ -154,7 +159,7 @@ def domain_first_label(dom):
 # based on aosnet_its_pruning and local_domain
 def maybe_prune_domain_parent(a, hinfo):
     global aosnet_its_pruning, local_domain
-    if (aosnet_its_pruning and hinfo['OS'] == "ITS" and parent_domain_equal_to(a, "Chaosnet.NET.")) \
+    if (aosnet_its_pruning and parent_domain_equal_to(a, "Chaosnet.NET.")) \
        or (local_domain != None and parent_domain_equal_to(a, local_domain)):
         return domain_first_label(a)
     else:
@@ -164,7 +169,7 @@ def maybe_prune_domain_parent(a, hinfo):
 h3netprinted = False
 def h3textnet(net, name):
     global h3netprinted
-    if not h3netprinted:
+    if False and not h3netprinted:
         # @@@@ look up where it is wired, and fix it?
         print(";;; Definition of Chaosnet for HOSTS3 UNTERNET scheme.")
         print(";;; This is not a value you can change, it's wired into the ITS monitor.")
@@ -173,17 +178,20 @@ def h3textnet(net, name):
 
 # print a HOST entry in h3text format
 def h3texthost(hname, haliases, addrs, hinfo):
+    import socket
     global aosnet_its_pruning
-    try:
-        print("HOST", ":", ", ".join(["CHAOS {:o}".format(s) for s in addrs]),
-              ":", maybe_prune_domain_parent(dns.name.from_text(hname).to_text(omit_final_dot=True), hinfo) +
-              (len(haliases) > 0 and ", " or "") +
-              ", ".join(set([maybe_prune_domain_parent(x, hinfo) for x in haliases])),
-              ":", hinfo['CPU'].upper(), ":", hinfo['OS'].upper(), ": :")
-    except KeyError:
-        print("## Host info error for", hname, "HINFO", hinfo, file=sys.stderr)
-        ## terminate line started within try
-        print()
+    cha = ", ".join(["CHAOS {:o}".format(s) for s in addrs])
+    if add_ip:
+        try:
+            (hn, ipaliases, ipas) = socket.gethostbyname_ex(hname)
+            cha = ", ".join(ipas)+", "+cha
+        except socket.gaierror:
+            ipas = []
+    print("HOST", ":", cha,
+          ":", maybe_prune_domain_parent(dns.name.from_text(hname).to_text(omit_final_dot=True), hinfo) +
+          (len(haliases) > 0 and ", " or "") +
+          ", ".join(set(haliases+[maybe_prune_domain_parent(x, hinfo) for x in haliases])),
+          ":", hinfo['CPU'].upper() if 'CPU' in hinfo else "", ":", hinfo['OS'].upper() if 'OS' in hinfo else "", ": :")
 
 def itslist(haddrs):
     global aliases
@@ -192,9 +200,7 @@ def itslist(haddrs):
     for n in hnames:
         (a, hinfo, x, y) = get_host_info(n)
         if 'OS' in hinfo and hinfo['OS'] == 'ITS':
-            nms = list(map(lambda x: maybe_prune_domain_parent(x, hinfo), aliases[n.lower()]))
-            nms.sort(key=lambda x: len(x))
-            itses.append(nms[0])
+            itses.append(domain_first_label(n))
     print(" ".join(itses))
 
 
@@ -206,19 +212,23 @@ def lispmnet(net, name):
 
 # Print a lispm format HOST entry
 def lispmhost(hname, haliases, addrs, hinfo):
+    import socket
     global aosnet_its_pruning
     ## USER vs SERVER vs TIP vs UNKNOWN - does anybody care? I don't.
-    try:
-        print("HOST", maybe_prune_domain_parent(dns.name.from_text(hname).to_text(omit_final_dot=True), hinfo)+",",
-              (len(addrs) > 1 and "["+", ".join(["CHAOS {:o}".format(s) for s in addrs])+"]"
-               or "CHAOS {:o}".format(addrs[0])) +
-              ", USER, "+hinfo['OS'].upper()+", "+hinfo['CPU'].upper() +
-              (len(haliases) > 0 and ", ["+", ".join(set([maybe_prune_domain_parent(x, hinfo) for x in haliases]))+"]"
-               or ""))
-    except KeyError:
-        print("## Host info error for", hname, "HINFO", hinfo, file=sys.stderr)
-        ## terminate line started within try
-        print()
+    cha = ", ".join(["CHAOS {:o}".format(s) for s in addrs])
+    if add_ip:
+        try:
+            (hn, ipaliases, ipas) = socket.gethostbyname_ex(hname)
+            cha = ", ".join(["INTERNET {}".format(s) for s in ipas])+", "+cha
+        except socket.gaierror:
+            ipas = []
+    print("HOST", maybe_prune_domain_parent(dns.name.from_text(hname).to_text(omit_final_dot=True), hinfo)+",",
+          (len(addrs) > 1 and "["+cha+"]"
+           or "CHAOS {:o}".format(addrs[0])) +
+          ", USER, "+(hinfo['OS'].upper() if 'OS' in hinfo else "UNKNOWN")+", " +
+          (hinfo['CPU'].upper() if 'CPU' in hinfo else "UNKNOWN") +
+          (len(haliases) > 0 and ", ["+", ".join(set([maybe_prune_domain_parent(x, hinfo) for x in haliases]))+"]"
+           or ""))
 
 # Print a hosts file in some format
 def hostsfile(soas, haddrs, hostformatter, netformatter):
@@ -256,43 +266,39 @@ def hostsfile(soas, haddrs, hostformatter, netformatter):
             al = []
         hostformatter(n, al, a, hinfo)
 
-def usage():
-    print("use\n",
-              " -3 for hosts3 format (RFC 810),\n",
-              " -l for lispm format (RFC 752)\n",
-              " -d dom for local domain\n",
-              " -i to create a list of ITS shortnames, suitable for ITSIRP in SYSTEM;CONFIG\n",
-              " -a to add short aliases for Chaosnet.NET hosts", file=sys.stderr)
-
-
 def main(argv):
-    global aosnet_its_pruning, local_domain
-    try:
-        opts, args = getopt.getopt(argv, "3laid:")
-    except getopt.GetoptError:
-        usage()
+    global aosnet_its_pruning, local_domain, add_ip
+    import argparse
+    parser = argparse.ArgumentParser(description='Host file generator')
+    parser.add_argument("-d",'--domain',dest='local_domain',
+                            help='Set local domain, which gets stripped from host names')
+    parser.add_argument("-3",'--hosts3',dest='hosts3',action='store_true',
+                            help='Use HOSTS3 format (RFC 810)')
+    parser.add_argument("-l",'--lispm',dest='lispm',action='store_true',
+                            help='Use LISPM format (RFC 752)')
+    parser.add_argument("-i",'--its',dest='its',action='store_true',
+                            help='Make ITS shortnames list, suitable for ITSIRP in SYSTEM;CONFIG')
+    parser.add_argument("-a",'--alias',dest='aliases',action='store_true',
+                            help='Use short aliases for Chaosnet.NET hosts')
+    parser.add_argument("-I",'--ip',dest='add_ip',action='store_true',
+                            help='Add IP addresses to output')
+    args = parser.parse_args()
+
+    if (args.hosts3 and args.lispm) or (args.hosts3 and args.its) or (args.lispm and args.its):
+        print("Only one format can be used at a time (-3 -l -i)", file=sys.stderr)
         sys.exit(1)
-    h3 = False
-    lispm = False
-    its_shortnames_only = False
-    for opt, arg in opts:
-        if opt == '-3':
-            h3 = True
-        elif opt == '-l':
-            lispm = True
-        elif opt == '-a':
-            aosnet_its_pruning = True
-        elif opt == '-i':
-            its_shortnames_only = True
-            aosnet_its_pruning = True
-        elif opt == '-d':
-            local_domain = arg
-            if dns.name.from_text(local_domain) == None:
-                print("Bad -d domain", arg, file=sys.stderr)
-                sys.exit(1)
-    if not(h3 or lispm or its_shortnames_only):
-        usage()
+    if not(args.hosts3 or args.lispm or args.its):
+        print("Must select one output format (-3 -l -i)", file=sys.stderr)
         sys.exit(1)
+
+    h3 = args.hosts3
+    lispm = args.lispm
+    its_shortnames_only = args.its
+    aosnet_its_pruning = args.its or args.aliases
+    if args.local_domain:
+        local_domain = dns.name.from_text(args.local_domain).to_text()
+    add_ip = args.add_ip
+        
     z = get_ch_addr_zone()
     collect_all_hosts(z)
     scan_for_cnames(doms)
