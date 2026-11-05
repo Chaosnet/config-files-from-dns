@@ -13,8 +13,8 @@
 # -i to generate a list of short ITS names, suitable for ITSIRP in SYSTEM;CONFIG
 # -a to remove trailing .Chaosnet.NET domain in aliases (so you can parse two-letter abbrevs easily)
 # -d domain to set local domain, which is also removed from aliases
-
-# TODO: include IP addresses, if given some option
+# -I include IP addresses, if they exist, including private addresses
+# -G include global IP addresses, if they exist (not private addresses https://en.wikipedia.org/wiki/Private_network)
 
 # Should perhaps retain the original aliases?
 # Should perhaps strip the local domain from the main name too, if the short one should be the canonical?
@@ -24,10 +24,8 @@
 # or similar
 
 # dnspython is at https://github.com/rthalley/dnspython.
-# Note that in PR #1383, strict compression rules were introduced
-# without fixing the parsing of Chaosnet A records, which breaks this
-# program.
-# I submitted PR #1410 on Nov 4, 2026, to fix this.
+# Version 2.6.1 introduced support for Chaosnet A records.
+# Version 2.9.2 patched 2.9, which broke Chaosnet A records, to make it work again.
 
 import dns.resolver
 import dns.zone
@@ -42,6 +40,7 @@ from socket import gethostbyname
 aosnet_its_pruning = False
 local_domain = None
 add_ip = False
+add_ip_global = False
 
 def get_host_info(name, printJunk=False):
     hinfo = {}
@@ -183,8 +182,11 @@ def h3texthost(hname, haliases, addrs, hinfo):
     cha = ", ".join(["CHAOS {:o}".format(s) for s in addrs])
     if add_ip:
         try:
+            import ipaddress
             (hn, ipaliases, ipas) = socket.gethostbyname_ex(hname)
-            cha = ", ".join(ipas)+", "+cha
+            ipas = [i for i in ipas if not ipaddress.ip_address(i).is_private] if add_ip_global else ipas
+            if len(ipas) > 0:
+                cha = ", ".join(ipas)+", "+cha
         except socket.gaierror:
             ipas = []
     print("HOST", ":", cha,
@@ -200,8 +202,12 @@ def itslist(haddrs):
     for n in hnames:
         (a, hinfo, x, y) = get_host_info(n)
         if 'OS' in hinfo and hinfo['OS'] == 'ITS':
-            itses.append(domain_first_label(n))
-    print(" ".join(itses))
+            l = domain_first_label(n)
+            if l.endswith("-ITS"): # Prune "-ITS" endings
+                l = l[:-4]
+            if len(l) <= 3:     # Only include short names
+                itses.append(l)
+    print(" ".join(set(itses))) # and remove duplicates
 
 
 # Print a lispm format NET entry
@@ -218,8 +224,11 @@ def lispmhost(hname, haliases, addrs, hinfo):
     cha = ", ".join(["CHAOS {:o}".format(s) for s in addrs])
     if add_ip:
         try:
+            import ipaddress
             (hn, ipaliases, ipas) = socket.gethostbyname_ex(hname)
-            cha = ", ".join(["INTERNET {}".format(s) for s in ipas])+", "+cha
+            ipas = [i for i in ipas if not ipaddress.ip_address(i).is_private] if add_ip_global else ipas
+            if len(ipas) > 0:
+                cha = ", ".join(["INTERNET {}".format(s) for s in ipas])+", "+cha
         except socket.gaierror:
             ipas = []
     print("HOST", maybe_prune_domain_parent(dns.name.from_text(hname).to_text(omit_final_dot=True), hinfo)+",",
@@ -267,7 +276,7 @@ def hostsfile(soas, haddrs, hostformatter, netformatter):
         hostformatter(n, al, a, hinfo)
 
 def main(argv):
-    global aosnet_its_pruning, local_domain, add_ip
+    global aosnet_its_pruning, local_domain, add_ip, add_ip_global
     import argparse
     parser = argparse.ArgumentParser(description='Host file generator')
     parser.add_argument("-d",'--domain',dest='local_domain',
@@ -281,7 +290,9 @@ def main(argv):
     parser.add_argument("-a",'--alias',dest='aliases',action='store_true',
                             help='Use short aliases for Chaosnet.NET hosts')
     parser.add_argument("-I",'--ip',dest='add_ip',action='store_true',
-                            help='Add IP addresses to output')
+                            help='Add IP addresses to output (including private addresses)')
+    parser.add_argument("-G",'--global-ip',dest='add_ip_global',action='store_true',
+                            help='Add non-private IP addresses to output')
     args = parser.parse_args()
 
     if (args.hosts3 and args.lispm) or (args.hosts3 and args.its) or (args.lispm and args.its):
@@ -297,7 +308,8 @@ def main(argv):
     aosnet_its_pruning = args.its or args.aliases
     if args.local_domain:
         local_domain = dns.name.from_text(args.local_domain).to_text()
-    add_ip = args.add_ip
+    add_ip = args.add_ip or args.add_ip_global
+    add_ip_global = args.add_ip_global
         
     z = get_ch_addr_zone()
     collect_all_hosts(z)

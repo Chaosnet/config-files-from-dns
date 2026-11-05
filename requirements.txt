@@ -1,2 +1,2 @@
-dnspython==2.6.1
+dnspython==2.9.2
 pkg-resources==0.0.0
