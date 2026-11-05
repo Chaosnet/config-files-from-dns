@@ -24,7 +24,7 @@
 # or similar
 
 # dnspython is at https://github.com/rthalley/dnspython.
-# Version 2.6.1 introduced support for Chaosnet A records.
+# Support for Chaosnet A records was introduced in 2018.
 # Version 2.9.2 patched 2.9, which broke Chaosnet A records, to make it work again.
 
 import dns.resolver
