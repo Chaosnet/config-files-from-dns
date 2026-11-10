@@ -15,6 +15,7 @@
 # -d domain to set local domain, which is also removed from aliases
 # -I include IP addresses, if they exist, including private addresses
 # -G include global IP addresses, if they exist (not private addresses https://en.wikipedia.org/wiki/Private_network)
+# -S server sets what DNS server to use
 
 # Should perhaps retain the original aliases?
 # Should perhaps strip the local domain from the main name too, if the short one should be the canonical?
@@ -41,6 +42,7 @@ aosnet_its_pruning = False
 local_domain = None
 add_ip = False
 add_ip_global = False
+dns_server = 'dns.chaosnet.net'
 
 def get_host_info(name, printJunk=False):
     hinfo = {}
@@ -48,7 +50,7 @@ def get_host_info(name, printJunk=False):
     a = []
     txt = ""
     try:
-        h = dns.query.udp(dns.message.make_query(name, dns.rdatatype.ANY, rdclass=dns.rdataclass.CH), gethostbyname('dns.chaosnet.net'))
+        h = dns.query.udp(dns.message.make_query(name, dns.rdatatype.ANY, rdclass=dns.rdataclass.CH), gethostbyname(dns_server))
         # answer is a set, find only the interesting ones
         for t in h.answer:
             # t is a dns.rrset.RRset object
@@ -68,7 +70,7 @@ def get_host_info(name, printJunk=False):
                     em = "{0}@{1}".format(u.to_text(), dom.to_text(omit_final_dot=True))
                     rptxt = []
                     if not(d.txt == dns.name.root):
-                        rps = dns.query.udp(dns.message.make_query(str(d.txt), dns.rdatatype.TXT, rdclass=dns.rdataclass.CH), gethostbyname('dns.chaosnet.net'))
+                        rps = dns.query.udp(dns.message.make_query(str(d.txt), dns.rdatatype.TXT, rdclass=dns.rdataclass.CH), gethostbyname(dns_server))
                         for rp in rps.answer:
                             for t in rp:
                                 rptxt.append(t.to_text())
@@ -92,7 +94,7 @@ def get_host_info(name, printJunk=False):
 soas = {}
 
 def get_ch_addr_zone():
-    z = dns.zone.from_xfr(dns.query.xfr(gethostbyname('dns.chaosnet.net'), 'ch-addr.net.', rdclass=dns.rdataclass.CH))
+    z = dns.zone.from_xfr(dns.query.xfr(gethostbyname(dns_server), 'ch-addr.net.', rdclass=dns.rdataclass.CH))
     soa = z.find_rdataset('@', dns.rdatatype.SOA)
     print(";;; Generated on", date.today().isoformat())
     # soas['CH-ADDR.NET.'] = soa[0].serial
@@ -132,7 +134,7 @@ def scan_for_cnames(doms):
         #### Should look up the NS (in the IN class) of the domain, and use the NS for that
         # need to try all NS, and perhaps all their addresses.
         # Too much bother as long as Psilo knows everything
-        za = dns.zone.from_xfr(dns.query.xfr(gethostbyname('dns.chaosnet.net'), dom, rdclass=dns.rdataclass.CH, relativize=False), relativize=False)
+        za = dns.zone.from_xfr(dns.query.xfr(gethostbyname(dns_server), dom, rdclass=dns.rdataclass.CH, relativize=False), relativize=False)
         soa = za.find_rdataset(dom, dns.rdatatype.SOA)
         soas[dom] = soa[0].serial
         for (name, ttl, rdata) in za.iterate_rdatas('CNAME'):
@@ -190,9 +192,11 @@ def h3texthost(hname, haliases, addrs, hinfo):
         except socket.gaierror:
             ipas = []
     print("HOST", ":", cha,
-          ":", maybe_prune_domain_parent(dns.name.from_text(hname).to_text(omit_final_dot=True), hinfo) +
+          ":", 
+          # Canonical name first
+          maybe_prune_domain_parent(dns.name.from_text(hname).to_text(omit_final_dot=True), hinfo) +
           (len(haliases) > 0 and ", " or "") +
-          ", ".join(set(haliases+[maybe_prune_domain_parent(x, hinfo) for x in haliases])),
+          ", ".join(sorted(list(set(haliases+[maybe_prune_domain_parent(x, hinfo) for x in haliases])), key=len, reverse=True)),
           ":", hinfo['CPU'].upper() if 'CPU' in hinfo else "", ":", hinfo['OS'].upper() if 'OS' in hinfo else "", ": :")
 
 def itslist(haddrs):
@@ -276,11 +280,13 @@ def hostsfile(soas, haddrs, hostformatter, netformatter):
         hostformatter(n, al, a, hinfo)
 
 def main(argv):
-    global aosnet_its_pruning, local_domain, add_ip, add_ip_global
+    global aosnet_its_pruning, local_domain, add_ip, add_ip_global, dns_server
     import argparse
     parser = argparse.ArgumentParser(description='Host file generator')
     parser.add_argument("-d",'--domain',dest='local_domain',
                             help='Set local domain, which gets stripped from host names')
+    parser.add_argument("-S",'--server',dest='dns_server',
+                            help='Set DNS server to ask for info. Default '+dns_server)
     parser.add_argument("-3",'--hosts3',dest='hosts3',action='store_true',
                             help='Use HOSTS3 format (RFC 810)')
     parser.add_argument("-l",'--lispm',dest='lispm',action='store_true',
@@ -310,6 +316,8 @@ def main(argv):
         local_domain = dns.name.from_text(args.local_domain).to_text()
     add_ip = args.add_ip or args.add_ip_global
     add_ip_global = args.add_ip_global
+    if args.dns_server:
+        dns_server = args.dns_server
         
     z = get_ch_addr_zone()
     collect_all_hosts(z)

@@ -18,5 +18,7 @@ Other options:
  - `-I` to add IP addresses to those that have them (including private IP addresses)
  
  - `-G` to add non-private (global) IP addresses only
+ 
+ - `-S` *servername* to set the DNS server used for queries (default `dns.chaosnet.net`)
 
 Requires dnspython, which is at https://github.com/rthalley/dnspython.
